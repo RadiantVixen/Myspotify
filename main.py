@@ -1,46 +1,68 @@
-from parse import parse_mxm_dataset, parse_triplets, parse_tagtraum_genres, parse_unique_tracks
-from recommender_system import Top_250_tracks, Top_100_tracks_by_genre, Collections
+import argparse
 import pandas as pd
+from parse import parse_mxm_dataset, parse_triplets, parse_tagtraum_genres, parse_unique_tracks
+from Content_based_approach import Collections
+from collaborative_filtering import similar_people_listen_to, similar_tracks
+from Non_personalized_approach import Top_250_tracks, Top_100_tracks_by_genre
+
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
-pd.set_option('display.width', 1000)  # Prevents wrapping to a new line
-
-
+pd.set_option('display.width', 1000)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Myspotify Music Recommender System")
+    parser.add_argument(
+        "--approach",
+        type=str,
+        required=True,
+        choices=["top250", "genre", "baseline", "word2vec", "classification", "collaborative"],
+        help="The recommendation approach to execute."
+    )
+    parser.add_argument("--genre", type=str, default="Rock", help="Genre name for genre-based top tracks.")
+    parser.add_argument("--keyword", type=str, default="love", help="Keyword/vibe for content-based collections (love, war, happiness, etc.).")
+    parser.add_argument("--user_id", type=str, default="b80344d063b5ccb3212f76538f3d9e43d87dca9e", help="Target user ID for collaborative filtering.")
+    parser.add_argument("--track_id", type=str, help="Target track ID for collaborative filtering.")
 
-    # Example usage:
+    args = parser.parse_args()
+
+    print("Loading datasets...")
     triplets_df = parse_triplets('data/train_triplets.txt')
-    # print(f"Total interaction triplets loaded: {len(triplets_df)}")
-    # print(triplets_df.head())
-
-    # # Example usage:
     genres_df = parse_tagtraum_genres('data/p02_msd_tagtraum_cd2.cls')
-    # print(f"Total genre annotations loaded: {len(genres_df)}")
-    # print(genres_df.head(10))
-
-
-    # Example usage:
     unique_tracks = parse_unique_tracks('data/p02_unique_tracks.txt')
-    # print(f"Total genre annotations loaded: {len(unique_tracks)}")
-    # print(unique_tracks.head(10))
+    vocabulary, tracks_data = parse_mxm_dataset('data/mxm_dataset_train.txt')
+
+    if args.approach == "top250":
+        print(f"\n--- Running Top 250 Tracks ---")
+        result = Top_250_tracks(triplets_df, unique_tracks)
+        print(result)
+
+    elif args.approach == "genre":
+        print(f"\n--- Running Top 100 Tracks for Genre: {args.genre} ---")
+        result = Top_100_tracks_by_genre(triplets_df, unique_tracks, genres_df, args.genre)
+        print(result)
+
+    elif args.approach in ["baseline", "word2vec", "classification"]:
+        print(f"\n--- Running Content-Based Approach: {args.approach} (Keyword: {args.keyword}) ---")
+        result = Collections(
+            user_id=args.user_id,
+            vocabulary=vocabulary, 
+            tracks_data=tracks_data, 
+            triplets_df=triplets_df, 
+            unique_tracks=unique_tracks, 
+            keyword=args.keyword, 
+            approach=args.approach
+        )
+        print(result)
+
+    elif args.approach == "collaborative":
+        if args.track_id:
+            print(f"\n--- Running Collaborative Filtering for track: {args.track_id} ---")
+            result = similar_tracks(triplets_df, unique_tracks, args.track_id, k=10)
+        else:
+            print(f"\n--- Running Collaborative Filtering for User: {args.user_id} ---")
+            result = similar_people_listen_to(triplets_df, unique_tracks, args.user_id, k=10)
+        print(result)
 
 
 
-    # Example usage:
-    vocabulary, tracks_data  = parse_mxm_dataset('data/mxm_dataset_train.txt')
-    # print(f"Total tracks loaded: {len(tracks_data)}")
-    # print(f"First track data: {tracks_data[0]}")
-
-
-
-    # top_250 =  Top_250_tracks(triplets_df, unique_tracks)
-    # print(top_250.head(1))
-
-    # top_100 = Top_100_tracks_by_genre(triplets_df, unique_tracks, genres_df, "Rock")
-    # print(top_100)
-
-    top_50 = Collections("b80344d063b5ccb3212f76538f3d9e43d87dca9e", vocabulary, tracks_data, triplets_df, unique_tracks, "love")
-    print(top_50)
-
-
+#TRAAAAK128F9318786
