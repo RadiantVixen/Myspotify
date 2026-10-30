@@ -1,5 +1,6 @@
 numpy
 pandas
-gensim
+gensim>=4.3.3
+scipy<1.14
 scikit-learn
 nltk

@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LogisticRegression
-from gensim.models import Word2Vec
 
 def baseline(tracks_data ,vocabulary):
     theme_keywords = {
@@ -50,6 +49,13 @@ def baseline(tracks_data ,vocabulary):
 
 
 def ft_word2vec(tracks_data, vocabulary):
+    try:
+        from gensim.models import Word2Vec
+    except ImportError as exc:
+        raise RuntimeError(
+            "The word2vec approach requires a gensim/SciPy-compatible installation."
+        ) from exc
+
     sentences = []
     target_vibes = ["love", "war", "happiness", "loneliness", "money"]
     
@@ -138,6 +144,9 @@ def classification_task_pipeline(tracks_data, vocabulary):
     print(f"Pseudo-labeled training set: {len(y_train_labels)} tracks")
     print(f"Unlabeled set to predict: {len(unlabeled_indices)} tracks")
 
+    if not X_train_dicts or len(set(y_train_labels)) < 2:
+        raise ValueError("Classification requires at least two labelled themes")
+
     vectorizer = DictVectorizer(sparse=True)
     X_train = vectorizer.fit_transform(X_train_dicts)
     y_train = np.array(y_train_labels)
@@ -173,7 +182,19 @@ def classification_task_pipeline(tracks_data, vocabulary):
     return final_df
 
 
-def Collections(user_id, vocabulary, tracks_data, triplets_df, tracks_df, vibe, approach="baseline"):
+def Collections(user_id, vocabulary, tracks_data, triplets_df, tracks_df,
+                vibe=None, approach="baseline", keyword=None):
+    selected_vibe = keyword if keyword is not None else vibe
+    if not isinstance(selected_vibe, str) or not selected_vibe.strip():
+        raise ValueError("keyword must be a non-empty string")
+    if approach not in {"baseline", "word2vec", "classification"}:
+        raise ValueError(f"Unknown content-based approach: {approach}")
+    required_triplet_columns = {"song_id", "play_count"}
+    required_track_columns = {"track_id", "song_id", "artist", "title"}
+    if not required_triplet_columns.issubset(triplets_df.columns):
+        raise ValueError("triplets_df must contain song_id and play_count")
+    if not required_track_columns.issubset(tracks_df.columns):
+        raise ValueError("tracks_df must contain track_id, song_id, artist, and title")
 
     if approach == "baseline":
         classified_tracks = baseline(tracks_data, vocabulary)
@@ -182,12 +203,16 @@ def Collections(user_id, vocabulary, tracks_data, triplets_df, tracks_df, vibe, 
     else:
         classified_tracks = classification_task_pipeline(tracks_data, vocabulary)
 
-
-    classified_tracks = classified_tracks[classified_tracks['dominant_vibe'] == vibe]
-    merged_df = pd.merge(classified_tracks, tracks_df, on='track_id')
-    merged_df = pd.merge(merged_df, triplets_df, on='song_id')
-    user_tracks = merged_df[merged_df['user_id'] == user_id]
-    top_50 = merged_df.sort_values(by='play_count', ascending=False).drop_duplicates(subset=['title']).head(50)
+    classified_tracks = classified_tracks[
+        classified_tracks['dominant_vibe'].str.casefold() == selected_vibe.strip().casefold()
+    ]
+    merged_df = pd.merge(classified_tracks, tracks_df, on='track_id', how='inner')
+    merged_df = pd.merge(merged_df, triplets_df, on='song_id', how='inner')
+    top_50 = (
+        merged_df.sort_values(by='play_count', ascending=False)
+        .drop_duplicates(subset=['title'])
+        .head(50)
+    )
     top_50 = top_50.reset_index(drop=True)
     top_50.index += 1
 

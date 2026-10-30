@@ -15,21 +15,27 @@ if __name__ == "__main__":
         "--approach",
         type=str,
         required=True,
-        choices=["top250", "genre", "baseline", "word2vec", "classification", "collaborative"],
+        choices=[
+            "top250", "genre", "baseline", "word2vec", "classification",
+            "collaborative-user", "collaborative-track"
+        ],
         help="The recommendation approach to execute."
     )
     parser.add_argument("--genre", type=str, default="Rock", help="Genre name for genre-based top tracks.")
     parser.add_argument("--keyword", type=str, default="love", help="Keyword/vibe for content-based collections (love, war, happiness, etc.).")
     parser.add_argument("--user_id", type=str, default="001889ee41b5f31c404a1abe4af07b2377fa776b", help="Target user ID for collaborative filtering.")
-    parser.add_argument("--track_id", type=str, default = "SOFRQTD12A81C233C0", help="Target track ID for collaborative filtering.")
+    parser.add_argument("--track_id", type=str, default=None, help="Target song ID for track-based recommendations.")
 
     args = parser.parse_args()
 
     print("Loading datasets...")
-    triplets_df = parse_triplets('data/train_triplets.txt')
-    genres_df = parse_tagtraum_genres('data/p02_msd_tagtraum_cd2.cls')
-    unique_tracks = parse_unique_tracks('data/p02_unique_tracks.txt')
-    vocabulary, tracks_data = parse_mxm_dataset('data/mxm_dataset_train.txt')
+    try:
+        triplets_df = parse_triplets('data/train_triplets.txt')
+        genres_df = parse_tagtraum_genres('data/p02_msd_tagtraum_cd2.cls')
+        unique_tracks = parse_unique_tracks('data/p02_unique_tracks.txt')
+        vocabulary, tracks_data = parse_mxm_dataset('data/mxm_dataset_train.txt')
+    except (OSError, ValueError) as exc:
+        parser.error(f"could not load the dataset: {exc}")
 
     if args.approach == "top250":
         print(f"\n--- Running Top 250 Tracks ---")
@@ -48,20 +54,26 @@ if __name__ == "__main__":
             vocabulary=vocabulary, 
             tracks_data=tracks_data, 
             triplets_df=triplets_df, 
-            unique_tracks=unique_tracks, 
-            keyword=args.keyword, 
+            tracks_df=unique_tracks,
+            keyword=args.keyword,
             approach=args.approach
         )
         print(result)
 
-    elif args.approach == "collaborative":
-        if args.track_id:
-            print(f"\n--- Running Collaborative Filtering for track: {args.track_id} ---")
-            result = similar_tracks(triplets_df, unique_tracks, args.track_id, k=10)
-        else:
-            print(f"\n--- Running Collaborative Filtering for User: {args.user_id} ---")
-            result = similar_people_listen_to(triplets_df, unique_tracks, args.user_id, k=10)
+    elif args.approach == "collaborative-user":
+        print(f"\n--- Running Collaborative Filtering for user: {args.user_id} ---")
+        result = similar_people_listen_to(triplets_df, unique_tracks, args.user_id, k=10)
         print(result)
+
+    elif args.approach == "collaborative-track":
+        if not args.track_id:
+            parser.error("--track_id is required for collaborative-track")
+        print(f"\n--- Running Collaborative Filtering for track: {args.track_id} ---")
+        result = similar_tracks(triplets_df, unique_tracks, args.track_id, k=10)
+    else:
+        parser.error(f"unsupported approach: {args.approach}")
+
+    print(result)
 
 
 
