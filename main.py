@@ -20,8 +20,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--genre", type=str, default="Rock", help="Genre name for genre-based top tracks.")
     parser.add_argument("--keyword", type=str, default="love", help="Keyword/vibe for content-based collections (love, war, happiness, etc.).")
-    parser.add_argument("--user_id", type=str, default="b80344d063b5ccb3212f76538f3d9e43d87dca9e", help="Target user ID for collaborative filtering.")
-    parser.add_argument("--track_id", type=str, help="Target track ID for collaborative filtering.")
+    parser.add_argument("--user_id", type=str, default="001889ee41b5f31c404a1abe4af07b2377fa776b", help="Target user ID for collaborative filtering.")
+    parser.add_argument("--track_id", type=str, default = "SOFRQTD12A81C233C0", help="Target track ID for collaborative filtering.")
 
     args = parser.parse_args()
 
@@ -65,4 +65,4 @@ if __name__ == "__main__":
 
 
 
-#TRAAAAK128F9318786
+#SOFRQTD12A81C233C0

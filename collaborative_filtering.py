@@ -9,10 +9,10 @@ def similar_people_listen_to(triplets_df, tracks_df, target_user_id, k=10):
 
     print("Filtering dataset to save memory...")
     user_counts = triplets_df['user_id'].value_counts()
-    active_users = user_counts[user_counts >= 200].index
+    active_users = user_counts[user_counts >= 500].index
     
     song_counts = triplets_df['song_id'].value_counts()
-    popular_songs = song_counts[song_counts >= 200].index
+    popular_songs = song_counts[song_counts >= 500].index
     
     triplets_filtered = triplets_df[
         triplets_df['user_id'].isin(active_users) & 
@@ -26,6 +26,7 @@ def similar_people_listen_to(triplets_df, tracks_df, target_user_id, k=10):
         values='play_count', 
         fill_value=0
     )
+    # print(user_item_matrix.head(1))
     train_data = []
     test_data = {}
     
@@ -100,10 +101,10 @@ def similar_people_listen_to(triplets_df, tracks_df, target_user_id, k=10):
 def similar_tracks(triplets_df, tracks_df, target_song_id, k=10):
     print("Filtering dataset to save memory...")
     user_counts = triplets_df['user_id'].value_counts()
-    active_users = user_counts[user_counts >= 100].index
+    active_users = user_counts[user_counts >= 500].index
     
     song_counts = triplets_df['song_id'].value_counts()
-    popular_songs = song_counts[song_counts >= 100].index
+    popular_songs = song_counts[song_counts >= 500].index
     
     triplets_filtered = triplets_df[
         triplets_df['user_id'].isin(active_users) & 
@@ -118,7 +119,7 @@ def similar_tracks(triplets_df, tracks_df, target_song_id, k=10):
         fill_value=0
     )
     print("Building track-item matrix...")
-    track_item_matrix = triplets_df.pivot_table(
+    track_item_matrix = triplets_filtered.pivot_table(
         index='song_id',
         columns='user_id', 
         values='play_count', 
