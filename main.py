@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--genre", type=str, default="Rock", help="Genre name for genre-based top tracks.")
     parser.add_argument("--keyword", type=str, default="love", help="Keyword/vibe for content-based collections (love, war, happiness, etc.).")
     parser.add_argument("--user_id", type=str, default="001889ee41b5f31c404a1abe4af07b2377fa776b", help="Target user ID for collaborative filtering.")
-    parser.add_argument("--track_id", type=str, default=None, help="Target song ID for track-based recommendations.")
+    parser.add_argument("--track_id", type=str, default="SOFRQTD12A81C233C0", help="Target song ID for track-based recommendations.")
 
     args = parser.parse_args()
 

@@ -3,10 +3,8 @@ import numpy as np
 
 
 def parse_triplets(file_path):
-    # Define column names based on the project instructions
     col_names = ['user_id', 'song_id', 'play_count']
     
-    # Load the tab-delimited file without headers
     triplets_df = pd.read_csv(
         file_path,
         sep='\t',
@@ -26,11 +24,9 @@ def parse_tagtraum_genres(file_path):
         for line in f:
             line = line.strip()
             
-            # Skip comment lines or empty lines
             if not line or line.startswith('#'):
                 continue
                 
-            # Split fields by tab
             fields = line.split('\t')
             
             track_id = fields[0]
@@ -48,7 +44,6 @@ def parse_tagtraum_genres(file_path):
 
 
 def parse_unique_tracks(file_path):
-    # Load the file using the custom <SEP> separator and python engine
     tracks_df = pd.read_csv(
         file_path,
         sep='<SEP>',
@@ -56,7 +51,7 @@ def parse_unique_tracks(file_path):
         names=['track_id', 'song_id', 'artist', 'title'],
         engine='python',
         encoding='utf-8',
-        on_bad_lines='skip' # Skips any malformed rows safely if they occur
+        on_bad_lines='skip'
     )
     return tracks_df
 
@@ -71,22 +66,16 @@ def parse_mxm_dataset(file_path):
         for line in f:
             line = line.strip()
             
-            # Skip empty lines or comment lines
             if not line or line.startswith('#'):
                 continue
                 
-            # The line starting with '%' contains the list of words
             if line.startswith('%'):
-                # Remove the '%' character and split by comma
                 vocabulary = line[1:].split(',')
                 continue
                 
-            # Normal data lines: track_id, mxm_track_id, word_idx:count, ...
             parts = line.split(',')
             track_id = parts[0]
             mxm_track_id = parts[1]
-            
-            # Parse the sparse word counts into a dictionary {word_index: count}
             word_counts = {}
             for item in parts[2:]:
                 if ':' in item:
