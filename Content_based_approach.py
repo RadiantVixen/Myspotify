@@ -20,8 +20,8 @@ def baseline(tracks_data ,vocabulary):
                 indices.append(vocabulary.index(w) + 1)
         theme_indices[theme] = indices
 
-    classified_tracks = []
     
+    classified_tracks = []
     for track in tracks_data:
         word_counts = track.get('word_counts', {})
         
@@ -123,23 +123,23 @@ def classification_task_pipeline(tracks_data, vocabulary):
     X_train_dicts = []
     y_train_labels = []
     unlabeled_indices = []
-
     for idx, track in enumerate(tracks_data):
-        word_counts = track.get("word_counts", {})
-        
-        scores = {
-            theme: sum(word_counts.get(w_idx, 0) for w_idx in w_indices)
-            for theme, w_indices in theme_indices.items()
-        }
-        
-        max_score = max(scores.values()) if scores else 0
-        
-        if max_score >= 3:
-            best_theme = max(scores, key=scores.get)
-            X_train_dicts.append(word_counts)
-            y_train_labels.append(best_theme)
-        else:
-            unlabeled_indices.append(idx)
+            word_counts = track.get("word_counts", {})
+            
+            scores = {
+                theme: sum(word_counts.get(w_idx, 0) for w_idx in w_indices)
+                for theme, w_indices in theme_indices.items()
+            }
+            
+            max_score = max(scores.values()) if scores else 0
+            
+            if max_score >= 3:
+                best_theme = max(scores, key=scores.get)
+                track['dominant_vibe'] = best_theme
+                X_train_dicts.append(word_counts)
+                y_train_labels.append(best_theme)
+            else:
+                unlabeled_indices.append(idx)
 
     print(f"Pseudo-labeled training set: {len(y_train_labels)} tracks")
     print(f"Unlabeled set to predict: {len(unlabeled_indices)} tracks")
@@ -165,13 +165,6 @@ def classification_task_pipeline(tracks_data, vocabulary):
         for i, pred in zip(unlabeled_indices, predicted_labels):
             tracks_data[i]['dominant_vibe'] = pred
 
-    train_counter = 0
-    for i, track in enumerate(tracks_data):
-        word_counts = track.get("word_counts", {})
-        scores = {theme: sum(word_counts.get(w_idx, 0) for w_idx in w_indices) for theme, w_indices in theme_indices.items()}
-        if max(scores.values() if scores else [0]) >= 3:
-            track['dominant_vibe'] = y_train_labels[train_counter]
-            train_counter += 1
 
     final_df = pd.DataFrame([{
         'track_id': t['track_id'],
@@ -183,9 +176,8 @@ def classification_task_pipeline(tracks_data, vocabulary):
 
 
 def Collections(user_id, vocabulary, tracks_data, triplets_df, tracks_df,
-                vibe=None, approach="baseline", keyword=None):
-    selected_vibe = keyword if keyword is not None else vibe
-    if not isinstance(selected_vibe, str) or not selected_vibe.strip():
+                vibe=None, approach="baseline"):
+    if not isinstance(vibe, str) or not vibe.strip():
         raise ValueError("keyword must be a non-empty string")
     if approach not in {"baseline", "word2vec", "classification"}:
         raise ValueError(f"Unknown content-based approach: {approach}")
@@ -204,7 +196,7 @@ def Collections(user_id, vocabulary, tracks_data, triplets_df, tracks_df,
         classified_tracks = classification_task_pipeline(tracks_data, vocabulary)
 
     classified_tracks = classified_tracks[
-        classified_tracks['dominant_vibe'].str.casefold() == selected_vibe.strip().casefold()
+        classified_tracks['dominant_vibe'].str.casefold() == vibe.strip().casefold()
     ]
     merged_df = pd.merge(classified_tracks, tracks_df, on='track_id', how='inner')
     merged_df = pd.merge(merged_df, triplets_df, on='song_id', how='inner')
